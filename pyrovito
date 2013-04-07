@@ -37,23 +37,30 @@ def configParse(argv):
     parser.add_option("--hand_right", action="store_true", dest="hand_right", default=False,help="hand right side")
     parser.add_option("--capture_dir", dest="capture_dir", default="./", type="string", help="capture directory")
     parser.add_option("-c", action="store_true", dest="capture", default=False, help="Enable image capture")
+    parser.add_option("-a", "--config_dir_arms", dest="config_dir_arms", default="robot_descriptions/tum-rosie/kinematics/lwr/", type="string", help="arms config data directory")
+    parser.add_option("-d", "--config_dir_hands", dest="config_dir_hands", default="robot_descriptions/tum-rosie/kinematics/sahand/", type="string", help="hands config data directory")
     (options, args)= parser.parse_args(argv[1:])
     return (options, args)
 
-def get_kin_descriptions(options):
+def get_kin_descriptions(options, config_dir_arms, config_dir_hands):
+    from arcospyu.config_parser.config_parser import import_config
     descriptions={}
     if options.arm_right:
-        arm_right=__import__("config-"+options.robot+"-right")
+        #arm_right=__import__()
+        arm_right=import_config(config_dir_arms+"/config-"+options.robot+"-right.py")
         descriptions["ar"]=arm_right.segments
     if options.arm_left:
-        arm_left=__import__("config-"+options.robot+"-left")
+        arm_left=import_config(config_dir_arms+"/config-"+options.robot+"-left.py")
+        #arm_left=__import__("config-"+options.robot+"-left")
         descriptions["al"]=arm_left.segments
     if options.hand_right:
-        hands=__import__("hands_kin")
+        hands=import_config(config_dir_hands+"/hands_kin.py")
+        #hands=__import__("hands_kin")
         descriptions["hr"]=[hands.hands_kin["right"],hands.motor_locked_joints]
         print "locked joints", hands.motor_locked_joints
     if options.hand_left:
-        hands=__import__("hands_kin")
+        hands=import_config(config_dir_hands+"/hands_kin.py")
+        #hands=__import__("hands_kin")
         descriptions["hl"]=[hands.hands_kin["left"],hands.motor_locked_joints]
     return(descriptions)
 
@@ -98,7 +105,7 @@ world_frame.scale=_n.array([0.3,0.3,0.3])
 scene.add_object(world_frame)
 
 #adding robot
-kin_desc=get_kin_descriptions(options)
+kin_desc=get_kin_descriptions(options, options.config_dir_arms, options.config_dir_hands)
 if options.arm_right:
     arm_right=Articulated(scene)
     arm_right.add_segments(kin_desc["ar"])
@@ -164,7 +171,9 @@ objects_port.open(yarpbaseportname+"/objects:i")
 objects_port.setStrict()
 objects_dict={}
 
-from hand import Hand
+from arcospyu.config_parser.config_parser import import_config
+
+from cmoc.robot.hand_sim_handler import Hand
 
 if options.hand_right:
     right_hand_server=Hand(handedness="right",sahand_number=0, portprefix="/roboviewer_right_hand", sahand_port_name_prefix="/sahand")
