@@ -1,6 +1,6 @@
 #!/usr/bin/python
-# Copyright (c) 2009 Technische Universitaet Muenchen, Informatik Lehrstuhl IX.
-# Authors: Alexis Maldonado Herrera <maldonad at cs.tum.edu> Federico Ruiz-Ugalde <memeruiz@gmail.com>
+# Copyright (c) 2012 Technische Universitaet Muenchen, Informatik Lehrstuhl IX.
+# Author: Federico Ruiz-Ugalde <memeruiz@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

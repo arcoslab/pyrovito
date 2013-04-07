@@ -1,4 +1,20 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# Copyright (c) 2012 Technische Universitaet Muenchen, Informatik Lehrstuhl IX.
+# Author: Federico Ruiz-Ugalde <memeruiz@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 #This modules creates a robot kinematic viewer plus some simple objects.
 #this module uses the config files from the arms and the kinematic description from the hand_cartesian to create the visual representation.
 #It uses the hand module from hand_cartesian to get the hand and finger's data, and uses the arm handler helper to get the data from the arm.

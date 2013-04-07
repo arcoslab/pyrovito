@@ -1,4 +1,4 @@
 pyrovito
 ========
 
-Pyrovito: Python robot visualization tool.
+Pyrovito: Python-Yarp robot visualization tool.
