@@ -1,0 +1,337 @@
+#!/usr/bin/python
+#This modules creates a robot kinematic viewer plus some simple objects.
+#this module uses the config files from the arms and the kinematic description from the hand_cartesian to create the visual representation.
+#It uses the hand module from hand_cartesian to get the hand and finger's data, and uses the arm handler helper to get the data from the arm.
+#in the objects:i port one can add simple visual objects and later change it's color, pose, and other properties
+
+#Example of objects:i :
+#(0 type sphere)
+#(0 timeout -1)
+#(0 trans 3 3 3)
+#(0 trans 0.3 0.3 0.3)
+#(0 color 0 1 0)
+#(0 color 1 0 0))
+#(0 color 1 0 0)
+#format : (id property_name property_values)
+# property values depend on the property_name
+from vispy.objects_lib import Arrow, Sphere, Disk, Bar, Frame, Articulated, Articulated_tree
+from vispy.engine import Camera,Display,Colors,Scene, Light
+import numpy as _n
+import numpy.linalg as _ln
+import time
+import pygame
+import sys, signal
+sys.path.append("../hand_cart")
+sys.path.append("../config_data/lwr")
+
+def configParse(argv):
+    import optparse
+    import sys
+    import os
+    sim=False
+    parser=optparse.OptionParser("usage: %prog [options]")
+    parser.add_option("-r", "--robot", dest="robot", default="lwr", type="string", help="robot name")
+    parser.add_option("--arm_left", action="store_true", dest="arm_left", default=False,help="arm left side")
+    parser.add_option("--arm_right", action="store_true", dest="arm_right", default=False,help="arm right side")
+    parser.add_option("--hand_left", action="store_true", dest="hand_left", default=False,help="hand left side")
+    parser.add_option("--hand_right", action="store_true", dest="hand_right", default=False,help="hand right side")
+    parser.add_option("--capture_dir", dest="capture_dir", default="./", type="string", help="capture directory")
+    parser.add_option("-c", action="store_true", dest="capture", default=False, help="Enable image capture")
+    (options, args)= parser.parse_args(argv[1:])
+    return (options, args)
+
+def get_kin_descriptions(options):
+    descriptions={}
+    if options.arm_right:
+        arm_right=__import__("config-"+options.robot+"-right")
+        descriptions["ar"]=arm_right.segments
+    if options.arm_left:
+        arm_left=__import__("config-"+options.robot+"-left")
+        descriptions["al"]=arm_left.segments
+    if options.hand_right:
+        hands=__import__("hands_kin")
+        descriptions["hr"]=[hands.hands_kin["right"],hands.motor_locked_joints]
+        print "locked joints", hands.motor_locked_joints
+    if options.hand_left:
+        hands=__import__("hands_kin")
+        descriptions["hl"]=[hands.hands_kin["left"],hands.motor_locked_joints]
+    return(descriptions)
+
+
+options,args=configParse(sys.argv)
+
+camera=Camera()
+size=640,480
+scene=Scene()
+if options.capture:
+    display=Display(camera,scene,res=size,image_dump_dir=options.capture_dir)
+else:
+    display=Display(camera,scene,res=size,image_dump_dir="")
+
+
+light0=Light(Light.LIGHTS[0])
+light0.position=_n.array([10.,10.,10.,1.0])
+scene.add_light(light0)
+
+light1=Light(Light.LIGHTS[1])
+light1.position=_n.array([-10.,10.,10.,1.0])
+scene.add_light(light1)
+
+light2=Light(Light.LIGHTS[2])
+light2.position=_n.array([0.,-10.,10.,1.0])
+scene.add_light(light2)
+
+light3=Light(Light.LIGHTS[3])
+light3.position=_n.array([0.,0.,-10.,1.0])
+scene.add_light(light3)
+
+
+#camera center object
+camera_center=Disk()
+camera_center.set_color(_n.array([0.5,0.5,0.5]))
+camera_center.set_color_reflex(_n.array([1.,1.,1.]),50.0)
+camera_center.visibility=False
+scene.add_object(camera_center)
+
+world_frame=Frame()
+world_frame.scale=_n.array([0.3,0.3,0.3])
+scene.add_object(world_frame)
+
+#adding robot
+kin_desc=get_kin_descriptions(options)
+if options.arm_right:
+    arm_right=Articulated(scene)
+    arm_right.add_segments(kin_desc["ar"])
+if options.arm_left:
+    arm_left=Articulated(scene)
+    arm_left.add_segments(kin_desc["al"])
+if options.hand_right:
+    hand_right_list=[]
+    for finger,locked_joints in zip(kin_desc["hr"][0],kin_desc["hr"][1]):
+        hand_right_list.append(Articulated(scene))
+        hand_right_list[-1].add_segments(finger,width=0.01)
+        i=0
+        #print "Locked joints", locked_joints
+        for segment in hand_right_list[-1].segments:
+            #print "Segment type", segment.joint_type
+            if segment.joint_type!="None":
+                if locked_joints[i]:
+                    segment.joint_type="None"
+                i+=1
+if options.hand_left:
+    hand_left_list=[]
+    for finger,locked_joints in zip(kin_desc["hl"][0],kin_desc["hl"][1]):
+        hand_left_list.append(Articulated(scene))
+        hand_left_list[-1].add_segments(finger,width=0.01)
+        i=0
+        #print "Locked joints", locked_joints
+        for segment in hand_left_list[-1].segments:
+            #print "Segment type", segment.joint_type
+            if segment.joint_type!="None":
+                if locked_joints[i]:
+                    segment.joint_type="None"
+                i+=1
+
+tree=Articulated_tree()
+if options.arm_right:
+    child_id=tree.add_articulated(arm_right,0)
+    if options.hand_right:
+        for finger in hand_right_list:
+            tree.add_articulated(finger,child_id)
+if options.arm_left:
+    child_id=tree.add_articulated(arm_left,0)
+    if options.hand_left:
+        for finger in hand_left_list:
+            tree.add_articulated(finger,child_id)
+
+tree.update_transformations()
+
+import yarp
+yarpbaseportname="/"+options.robot+"/roboviewer"
+yarp.Network.init()
+if options.arm_right:
+    rarm_qin_port=yarp.BufferedPortBottle()
+    rarm_qin_port.open(yarpbaseportname+"/r_arm_qin")
+    yarp.Network.connect("/"+options.robot+"/right/bridge/encoders",yarpbaseportname+"/r_arm_qin")
+if options.arm_left:
+    larm_qin_port=yarp.BufferedPortBottle()
+    larm_qin_port.open(yarpbaseportname+"/l_arm_qin")
+    yarp.Network.connect("/"+options.robot+"/left/bridge/encoders",yarpbaseportname+"/l_arm_qin")
+
+#objects port
+objects_port=yarp.BufferedPortBottle()
+objects_port.open(yarpbaseportname+"/objects:i")
+objects_port.setStrict()
+objects_dict={}
+
+from hand import Hand
+
+if options.hand_right:
+    right_hand_server=Hand(handedness="right",sahand_number=0, portprefix="/roboviewer_right_hand", sahand_port_name_prefix="/sahand")
+if options.hand_left:
+    left_hand_server=Hand(handedness="left",sahand_number=1, portprefix="/roboviewer_left_hand", sahand_port_name_prefix="/sahand")
+
+def terminate_handler(signum,stack_frame):
+    print "Catched signal", signum
+    if options.hand_left:
+        global left_hand_server
+        del(left_hand_server)
+    if options.hand_right:
+        global right_hand_server
+        del(right_hand_server)
+    yarp.Network.fini()
+    sys.exit()
+
+signal.signal(signal.SIGTERM,terminate_handler)
+signal.signal(signal.SIGINT,terminate_handler)
+
+import time
+from arcospyu.control.control_loop import Controlloop
+
+class My_loop(Controlloop):
+    def set_params(self,params):
+        pass
+
+    def process(self):
+        for event in pygame.event.get():
+            #print event
+            if event.type == pygame.QUIT or\
+                   (event.type ==pygame.KEYDOWN and event.key == pygame.K_q):
+                terminate_handler(signal.SIGTERM,None)
+            #camera events:
+            if event.type == pygame.MOUSEMOTION or \
+                   event.type ==pygame.MOUSEBUTTONDOWN or \
+                   event.type == pygame.MOUSEBUTTONUP:
+                camera.update(event)
+                camera.camera_matrix.get_frame() #TODO, this is done twice innecessarly
+                val=camera.camera_matrix.radius*0.01
+                camera_center.set_pos(_ln.inv(camera.camera_matrix.center_rot_frame)[:,3][:3])
+                camera_center.scale=[val,val,1.0]
+                if event.type == pygame.MOUSEMOTION :
+                    if event.buttons == (1,0,0) or event.buttons == (0,0,1):
+                        camera_center.visibility=True
+                if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
+                    if event.button == 4 or event.button ==5:
+                        camera_center.visibility=True
+        if options.arm_right:
+            rarm_qin_bottle=rarm_qin_port.read(False)
+            if rarm_qin_bottle:
+                #print rarm_qin_bottle.toString()
+                rarm_qin=map(yarp.Value.asDouble,map(rarm_qin_bottle.get,range(rarm_qin_bottle.size())))
+                #print rarm_qin
+                arm_right.set_angles(rarm_qin)
+                #print arm_right.angles
+        if options.arm_left:
+            larm_qin_bottle=larm_qin_port.read(False)
+            if larm_qin_bottle:
+                #print larm_qin_bottle.toString()
+                larm_qin=map(yarp.Value.asDouble,map(larm_qin_bottle.get,range(larm_qin_bottle.size())))
+                #print larm_qin
+                arm_left.set_angles(larm_qin)
+                #print arm_left.angles
+        if options.hand_right:
+            right_hand_server.update_sensor_data()
+            for finger_server,finger_view in \
+                    zip(right_hand_server.fingers,hand_right_list):
+                finger_angles=finger_server.get_joint_pos()
+                finger_view.set_angles(_n.concatenate((finger_angles,_n.array([finger_angles[-1]]))))
+        if options.hand_left:
+            left_hand_server.update_sensor_data()
+            for finger_server,finger_view in \
+                    zip(left_hand_server.fingers,hand_left_list):
+                finger_angles=finger_server.get_joint_pos()
+                finger_view.set_angles(_n.concatenate((finger_angles,_n.array([finger_angles[-1]]))))
+        #objects port processing
+        while objects_port.getPendingReads()!=0:
+            objects_bottle=objects_port.read(True)
+            if objects_bottle:
+                objects_bottles=map(yarp.Value.asList,map(objects_bottle.get,range(objects_bottle.size())))
+                for object_bottle in objects_bottles:
+                    object_id=object_bottle.get(0).asInt()
+                    object_prop_name=object_bottle.get(1).toString()
+                    if object_prop_name=="type":
+                        object_prop_data=object_bottle.get(2).toString()
+                    else:
+                        object_prop_data=_n.array(map(yarp.Value.asDouble,map(object_bottle.get,range(object_bottle.size())[2:])))
+                    #Properties are: type (sphere, frame, arrow, box), pose (16 values), color (three values), scale (three values),etc
+                    if object_id in objects_dict:
+                        #updating, adding property to object
+                        if object_prop_name=="del":
+                            scene.remove_object(objects_dict[object_id]["visid"])
+                            del(objects_dict[object_id])
+                            continue
+                        else:
+                            object_dict=objects_dict[object_id]
+                            object_dict[object_prop_name]=object_prop_data
+                    elif object_prop_name=="del":
+                        print "Object doesn't exist"
+                        continue
+                    else:
+                        #new object, creating
+                        objects_dict[object_id]={object_prop_name: object_prop_data}
+                        object_dict=objects_dict[object_id]
+                        #print object_dict
+                        if not "type" in object_dict:
+                            object_dict["type"]="sphere"
+                            object_dict["vis"]=Sphere()
+                        else:
+                            if object_dict["type"]=="sphere":
+                                object_dict["vis"]=Sphere()
+                            elif object_dict["type"]=="frame":
+                                object_dict["vis"]=Frame()
+                            elif object_dict["type"]=="arrow":
+                                object_dict["vis"]=Arrow()
+                            elif object_dict["type"]=="box":
+                                object_dict["vis"]=Bar()
+                        object_dict["visid"]=scene.add_object(object_dict["vis"])
+                        if not "timeout" in object_dict:
+                            object_dict["timeout"]=10.0
+                    #resetting watchdog
+                    objects_dict[object_id]["time"]=time.time()
+                    #updating object
+                    #for all objects:
+                    if object_prop_name=="pose_offset" and "pose_offset" in objects_dict[object_id]:
+                        #print "Pose", objects_dict[object_id]["vis"].trans_rot_matrix
+                        print "hola"
+                        objects_dict[object_id]["vis"].set_center_offset_matrix(objects_dict[object_id]["pose_offset"].reshape((4,4)))
+                        print "hola2"
+                    if "pose" in objects_dict[object_id]:
+                        #print "Pose", objects_dict[object_id]["vis"].trans_rot_matrix
+                        objects_dict[object_id]["vis"].trans_rot_matrix=objects_dict[object_id]["pose"].reshape((4,4))
+                        #print "Pose", objects_dict[object_id]["vis"].trans_rot_matrix
+                        if (object_prop_name=="pose") and ("trans" in objects_dict[object_id]):
+                            del objects_dict[object_id]["trans"]
+                        if (object_prop_name=="pose") and ("axis" in objects_dict[object_id]):
+                            del objects_dict[object_id]["axis"]
+                    if object_prop_name=="scale" and "scale" in objects_dict[object_id]:
+                        objects_dict[object_id]["vis"].scale=objects_dict[object_id]["scale"]
+                    if "color" in objects_dict[object_id]:
+                        objects_dict[object_id]["vis"].set_color(objects_dict[object_id]["color"])
+                    #for sphere
+                    if "radius" in objects_dict[object_id]:
+                        objects_dict[object_id]["vis"].set_radius(objects_dict[object_id]["radius"])
+                    #for sphere and arrow
+                    if "trans" in objects_dict[object_id]:
+                        objects_dict[object_id]["vis"].set_pos(objects_dict[object_id]["trans"])
+                        if (object_prop_name=="trans") and ("pose" in objects_dict[object_id]):
+                            del objects_dict[object_id]["pose"]
+                    #for arrow
+                    if object_prop_name=="axis" and "axis" in objects_dict[object_id]:
+                        objects_dict[object_id]["vis"].set_axis(objects_dict[object_id]["axis"])
+                        if (object_prop_name=="trans") and ("pose" in objects_dict[object_id]):
+                            del objects_dict[object_id]["pose"]
+            #print objects_dict
+
+        objects_to_remove=[]
+        for object_id in objects_dict:
+            if objects_dict[object_id]["timeout"]!=-1 and ((time.time()-objects_dict[object_id]["time"]) > objects_dict[object_id]["timeout"]):
+                scene.remove_object(objects_dict[object_id]["visid"])
+                objects_to_remove.append(object_id)
+        for object_id in objects_to_remove:
+            del(objects_dict[object_id])
+        tree.update_transformations()
+        display.update()
+        camera_center.visibility=False
+
+loop=My_loop(15.)
+loop.loop()
