@@ -30,8 +30,8 @@
 #(0 color 1 0 0)
 #format : (id property_name property_values)
 # property values depend on the property_name
-from vispy.objects_lib import Arrow, Sphere, Disk, Bar, Frame, Articulated, Articulated_tree
-from vispy.engine import Camera,Display,Colors,Scene, Light
+from avispy.objects_lib import Arrow, Sphere, Disk, Bar, Frame, Articulated, Articulated_tree
+from avispy.engine import Camera,Display,Colors,Scene, Light
 import numpy as _n
 import numpy.linalg as _ln
 import time
@@ -188,13 +188,13 @@ objects_port.setStrict()
 objects_dict={}
 
 from arcospyu.config_parser.config_parser import import_config
-
+config_hands=import_config(options.config_dir_hands+"/hands_kin.py")
 from cmoc.robot.hand_sim_handler import Hand
 
 if options.hand_right:
-    right_hand_server=Hand(handedness="right",sahand_number=0, portprefix="/roboviewer_right_hand", sahand_port_name_prefix="/sahand")
+    right_hand_server=Hand(config_hands, handedness="right",sahand_number=0, portprefix="/roboviewer_right_hand", sahand_port_name_prefix="/sahand")
 if options.hand_left:
-    left_hand_server=Hand(handedness="left",sahand_number=1, portprefix="/roboviewer_left_hand", sahand_port_name_prefix="/sahand")
+    left_hand_server=Hand(config_hands, handedness="left",sahand_number=1, portprefix="/roboviewer_left_hand", sahand_port_name_prefix="/sahand")
 
 def terminate_handler(signum,stack_frame):
     print "Catched signal", signum
