@@ -30,7 +30,7 @@
 #(0 color 1 0 0)
 #format : (id property_name property_values)
 # property values depend on the property_name
-from avispy.objects_lib import Arrow, Sphere, Disk, Bar, Frame, Articulated, Articulated_tree
+from avispy.objects_lib import Arrow, Sphere, Disk, Bar, Frame, Articulated, Articulated_tree, Cylinder
 from avispy.engine import Camera,Display,Colors,Scene, Light
 import numpy as _n
 import numpy.linalg as _ln
@@ -304,6 +304,10 @@ class My_loop(Controlloop):
                                 object_dict["vis"]=Sphere()
                             elif object_dict["type"]=="frame":
                                 object_dict["vis"]=Frame()
+                            ##daniel modification to add cylinders
+                            elif object_dict["type"]=="cylinder":
+                                object_dict["vis"]=Cylinder()
+                            ##end daniel modification
                             elif object_dict["type"]=="arrow":
                                 object_dict["vis"]=Arrow()
                             elif object_dict["type"]=="box":
