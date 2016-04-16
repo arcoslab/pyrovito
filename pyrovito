@@ -304,10 +304,12 @@ class My_loop(Controlloop):
                                 object_dict["vis"]=Sphere()
                             elif object_dict["type"]=="frame":
                                 object_dict["vis"]=Frame()
+
                             ##daniel modification to add cylinders
                             elif object_dict["type"]=="cylinder":
                                 object_dict["vis"]=Cylinder()
                             ##end daniel modification
+
                             elif object_dict["type"]=="arrow":
                                 object_dict["vis"]=Arrow()
                             elif object_dict["type"]=="box":
