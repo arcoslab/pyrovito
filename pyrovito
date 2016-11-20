@@ -42,11 +42,15 @@ sys.path.append("../config_data/lwr")
 
 def configParse(argv):
     import optparse
+    optparse.SUPPRESS_HELP
     import sys
     import os
     sim=False
-    parser=optparse.OptionParser("usage: %prog [options]")
+    parser=optparse.OptionParser("usage: %prog [options]", add_help_option=False)
+    parser.add_option("-e", "--help", action="help")
     parser.add_option("-r", "--robot", dest="robot", default="lwr", type="string", help="robot name")
+    parser.add_option("-w", "--width", dest="width", default="1280", type="int", help="Width")
+    parser.add_option("-h", "--height", dest="height", default="720", type="int", help="Height")
     parser.add_option("--arm_left", action="store_true", dest="arm_left", default=False,help="arm left side")
     parser.add_option("--arm_right", action="store_true", dest="arm_right", default=False,help="arm right side")
     parser.add_option("--hand_left", action="store_true", dest="hand_left", default=False,help="hand left side")
@@ -84,7 +88,7 @@ def get_kin_descriptions(options, config_dir_arms, config_dir_hands):
 options,args=configParse(sys.argv)
 
 camera=Camera()
-size=640,480
+size=options.width,options.height
 scene=Scene()
 if options.capture:
     display=Display(camera,scene,res=size,image_dump_dir=options.capture_dir)
