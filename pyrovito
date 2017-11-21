@@ -30,7 +30,7 @@
 #(0 color 1 0 0)
 #format : (id property_name property_values)
 # property values depend on the property_name
-from avispy.objects_lib import Arrow, Sphere, Disk, Bar, Frame, Articulated, Articulated_tree, Cylinder, Triangle_3D
+from avispy.objects_lib import Arrow, Sphere, Disk, Bar, Frame, Articulated, Articulated_tree, Cylinder, Triangle_3D, Framed_face, Framed_sphere, Framed_box
 from avispy.engine import Camera,Display,Colors,Scene, Light
 import numpy as _n
 import numpy.linalg as _ln
@@ -193,6 +193,15 @@ class My_loop(Controlloop):
                                 object_dict["vis"]=Bar()
                             elif object_dict["type"]=="triangle3D":
                                 object_dict["vis"]=Triangle_3D()
+                            ##framed objects
+                            elif object_dict["type"]=="framed_face":
+                                object_dict["vis"]=Framed_face()
+
+                            elif object_dict["type"]=="framed_sphere":
+                                object_dict["vis"]=Framed_sphere()
+
+                            elif object_dict["type"]=="framed_box":
+                                object_dict["vis"]=Framed_box()
                         object_dict["visid"]=scene.add_object(object_dict["vis"])
                         if not "timeout" in object_dict:
                             object_dict["timeout"]=10.0
