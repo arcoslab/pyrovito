@@ -30,7 +30,7 @@
 #(0 color 1 0 0)
 #format : (id property_name property_values)
 # property values depend on the property_name
-from avispy.objects_lib import Arrow, Sphere, Disk, Bar, Frame, Articulated, Articulated_tree, Cylinder
+from avispy.objects_lib import Arrow, Sphere, Disk, Bar, Frame, Articulated, Articulated_tree, Cylinder, Triangle_3D
 from avispy.engine import Camera,Display,Colors,Scene, Light
 import numpy as _n
 import numpy.linalg as _ln
@@ -48,42 +48,13 @@ def configParse(argv):
     sim=False
     parser=optparse.OptionParser("usage: %prog [options]", add_help_option=False)
     parser.add_option("-e", "--help", action="help")
-    parser.add_option("-r", "--robot", dest="robot", default="lwr", type="string", help="robot name")
     parser.add_option("-w", "--width", dest="width", default="1280", type="int", help="Width")
     parser.add_option("-h", "--height", dest="height", default="720", type="int", help="Height")
-    parser.add_option("--arm_left", action="store_true", dest="arm_left", default=False,help="arm left side")
-    parser.add_option("--arm_right", action="store_true", dest="arm_right", default=False,help="arm right side")
-    parser.add_option("--hand_left", action="store_true", dest="hand_left", default=False,help="hand left side")
-    parser.add_option("--hand_right", action="store_true", dest="hand_right", default=False,help="hand right side")
     parser.add_option("--capture_dir", dest="capture_dir", default="./", type="string", help="capture directory")
+    parser.add_option("--portbasename", dest="portbasename", default="myvis", type="string", help="Yarp port base name")
     parser.add_option("-c", action="store_true", dest="capture", default=False, help="Enable image capture")
-    parser.add_option("-a", "--config_dir_arms", dest="config_dir_arms", default="robot_descriptions/tum-rosie/kinematics/lwr/", type="string", help="arms config data directory")
-    parser.add_option("-d", "--config_dir_hands", dest="config_dir_hands", default="robot_descriptions/tum-rosie/kinematics/sahand/", type="string", help="hands config data directory")
     (options, args)= parser.parse_args(argv[1:])
     return (options, args)
-
-def get_kin_descriptions(options, config_dir_arms, config_dir_hands):
-    from arcospyu.config_parser.config_parser import import_config
-    descriptions={}
-    if options.arm_right:
-        #arm_right=__import__()
-        arm_right=import_config(config_dir_arms+"/config-"+options.robot+"-right.py")
-        descriptions["ar"]=arm_right.segments
-    if options.arm_left:
-        arm_left=import_config(config_dir_arms+"/config-"+options.robot+"-left.py")
-        #arm_left=__import__("config-"+options.robot+"-left")
-        descriptions["al"]=arm_left.segments
-    if options.hand_right:
-        hands=import_config(config_dir_hands+"/hands_kin.py")
-        #hands=__import__("hands_kin")
-        descriptions["hr"]=[hands.hands_kin["right"],hands.motor_locked_joints]
-        print "locked joints", hands.motor_locked_joints
-    if options.hand_left:
-        hands=import_config(config_dir_hands+"/hands_kin.py")
-        #hands=__import__("hands_kin")
-        descriptions["hl"]=[hands.hands_kin["left"],hands.motor_locked_joints]
-    return(descriptions)
-
 
 options,args=configParse(sys.argv)
 
@@ -124,66 +95,9 @@ world_frame=Frame()
 world_frame.scale=_n.array([0.3,0.3,0.3])
 scene.add_object(world_frame)
 
-#adding robot
-kin_desc=get_kin_descriptions(options, options.config_dir_arms, options.config_dir_hands)
-if options.arm_right:
-    arm_right=Articulated(scene)
-    arm_right.add_segments(kin_desc["ar"])
-if options.arm_left:
-    arm_left=Articulated(scene)
-    arm_left.add_segments(kin_desc["al"])
-if options.hand_right:
-    hand_right_list=[]
-    for finger,locked_joints in zip(kin_desc["hr"][0],kin_desc["hr"][1]):
-        hand_right_list.append(Articulated(scene))
-        hand_right_list[-1].add_segments(finger,width=0.01)
-        i=0
-        #print "Locked joints", locked_joints
-        for segment in hand_right_list[-1].segments:
-            #print "Segment type", segment.joint_type
-            if segment.joint_type!="None":
-                if locked_joints[i]:
-                    segment.joint_type="None"
-                i+=1
-if options.hand_left:
-    hand_left_list=[]
-    for finger,locked_joints in zip(kin_desc["hl"][0],kin_desc["hl"][1]):
-        hand_left_list.append(Articulated(scene))
-        hand_left_list[-1].add_segments(finger,width=0.01)
-        i=0
-        #print "Locked joints", locked_joints
-        for segment in hand_left_list[-1].segments:
-            #print "Segment type", segment.joint_type
-            if segment.joint_type!="None":
-                if locked_joints[i]:
-                    segment.joint_type="None"
-                i+=1
-
-tree=Articulated_tree()
-if options.arm_right:
-    child_id=tree.add_articulated(arm_right,0)
-    if options.hand_right:
-        for finger in hand_right_list:
-            tree.add_articulated(finger,child_id)
-if options.arm_left:
-    child_id=tree.add_articulated(arm_left,0)
-    if options.hand_left:
-        for finger in hand_left_list:
-            tree.add_articulated(finger,child_id)
-
-tree.update_transformations()
-
 import yarp
-yarpbaseportname="/"+options.robot+"/roboviewer"
+yarpbaseportname="/"+options.portbasename+"/roboviewer"
 yarp.Network.init()
-if options.arm_right:
-    rarm_qin_port=yarp.BufferedPortBottle()
-    rarm_qin_port.open(yarpbaseportname+"/r_arm_qin")
-    yarp.Network.connect("/"+options.robot+"/right/bridge/encoders",yarpbaseportname+"/r_arm_qin")
-if options.arm_left:
-    larm_qin_port=yarp.BufferedPortBottle()
-    larm_qin_port.open(yarpbaseportname+"/l_arm_qin")
-    yarp.Network.connect("/"+options.robot+"/left/bridge/encoders",yarpbaseportname+"/l_arm_qin")
 
 #objects port
 objects_port=yarp.BufferedPortBottle()
@@ -192,22 +106,9 @@ objects_port.setStrict()
 objects_dict={}
 
 from arcospyu.config_parser.config_parser import import_config
-config_hands=import_config(options.config_dir_hands+"/hands_kin.py")
-from cmoc.robot.hand_sim_handler import Hand
-
-if options.hand_right:
-    right_hand_server=Hand(config_hands, handedness="right",sahand_number=0, portprefix="/roboviewer_right_hand", sahand_port_name_prefix="/sahand")
-if options.hand_left:
-    left_hand_server=Hand(config_hands, handedness="left",sahand_number=1, portprefix="/roboviewer_left_hand", sahand_port_name_prefix="/sahand")
 
 def terminate_handler(signum,stack_frame):
     print "Catched signal", signum
-    if options.hand_left:
-        global left_hand_server
-        del(left_hand_server)
-    if options.hand_right:
-        global right_hand_server
-        del(right_hand_server)
     yarp.Network.fini()
     sys.exit()
 
@@ -242,34 +143,6 @@ class My_loop(Controlloop):
                 if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 4 or event.button ==5:
                         camera_center.visibility=True
-        if options.arm_right:
-            rarm_qin_bottle=rarm_qin_port.read(False)
-            if rarm_qin_bottle:
-                #print rarm_qin_bottle.toString()
-                rarm_qin=map(yarp.Value.asDouble,map(rarm_qin_bottle.get,range(rarm_qin_bottle.size())))
-                #print rarm_qin
-                arm_right.set_angles(rarm_qin)
-                #print arm_right.angles
-        if options.arm_left:
-            larm_qin_bottle=larm_qin_port.read(False)
-            if larm_qin_bottle:
-                #print larm_qin_bottle.toString()
-                larm_qin=map(yarp.Value.asDouble,map(larm_qin_bottle.get,range(larm_qin_bottle.size())))
-                #print larm_qin
-                arm_left.set_angles(larm_qin)
-                #print arm_left.angles
-        if options.hand_right:
-            right_hand_server.update_sensor_data()
-            for finger_server,finger_view in \
-                    zip(right_hand_server.fingers,hand_right_list):
-                finger_angles=finger_server.get_joint_pos()
-                finger_view.set_angles(_n.concatenate((finger_angles,_n.array([finger_angles[-1]]))))
-        if options.hand_left:
-            left_hand_server.update_sensor_data()
-            for finger_server,finger_view in \
-                    zip(left_hand_server.fingers,hand_left_list):
-                finger_angles=finger_server.get_joint_pos()
-                finger_view.set_angles(_n.concatenate((finger_angles,_n.array([finger_angles[-1]]))))
         #objects port processing
         while objects_port.getPendingReads()!=0:
             objects_bottle=objects_port.read(True)
@@ -318,6 +191,8 @@ class My_loop(Controlloop):
                                 object_dict["vis"]=Arrow()
                             elif object_dict["type"]=="box":
                                 object_dict["vis"]=Bar()
+                            elif object_dict["type"]=="triangle3D":
+                                object_dict["vis"]=Triangle_3D()
                         object_dict["visid"]=scene.add_object(object_dict["vis"])
                         if not "timeout" in object_dict:
                             object_dict["timeout"]=10.0
@@ -364,7 +239,6 @@ class My_loop(Controlloop):
                 objects_to_remove.append(object_id)
         for object_id in objects_to_remove:
             del(objects_dict[object_id])
-        tree.update_transformations()
         display.update()
         camera_center.visibility=False
 
