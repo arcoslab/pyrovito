@@ -176,14 +176,17 @@ tree.update_transformations()
 import yarp
 yarpbaseportname="/"+options.robot+"/roboviewer"
 yarp.Network.init()
+cstyle=yarp.ContactStyle()
+cstyle.persistent=True
+
 if options.arm_right:
     rarm_qin_port=yarp.BufferedPortBottle()
     rarm_qin_port.open(yarpbaseportname+"/r_arm_qin")
-    yarp.Network.connect("/"+options.robot+"/right/bridge/encoders",yarpbaseportname+"/r_arm_qin")
+    yarp.Network.connect("/"+options.robot+"/right/bridge/encoders",yarpbaseportname+"/r_arm_qin", cstyle)
 if options.arm_left:
     larm_qin_port=yarp.BufferedPortBottle()
     larm_qin_port.open(yarpbaseportname+"/l_arm_qin")
-    yarp.Network.connect("/"+options.robot+"/left/bridge/encoders",yarpbaseportname+"/l_arm_qin")
+    yarp.Network.connect("/"+options.robot+"/left/bridge/encoders",yarpbaseportname+"/l_arm_qin", cstyle)
 
 #objects port
 objects_port=yarp.BufferedPortBottle()

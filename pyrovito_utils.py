@@ -16,12 +16,14 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import yarp
+cstyle=yarp.ContactStyle()
+cstyle.persistent=True
 
 class Roboviewer_objects():
     def __init__(self,portbasename,roboviewerportbasename,counter=-1):
         self.out_port=yarp.BufferedPortBottle()
         self.out_port.open(portbasename+"/roboviewer_out")
-        yarp.Network.connect(portbasename+"/roboviewer_out", roboviewerportbasename+"/objects:i")
+        yarp.Network.connect(portbasename+"/roboviewer_out", roboviewerportbasename+"/objects:i", cstyle)
         self.counter=counter
     
     def create_object(self,object_type):
