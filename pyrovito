@@ -42,7 +42,7 @@ import yarp
 import numpy as _n
 import numpy.linalg as _ln
 import optparse
-# import os
+# import os # commented since unused.
 
 from avispy.objects_lib import (Arrow, Sphere, Disk, Bar, Frame, Articulated,
                                 Articulated_tree, Cylinder, Framed_face,
@@ -58,7 +58,7 @@ sys.path.append('../config_data/lwr')
 
 def configParse(argv):
     optparse.SUPPRESS_HELP
-    # sim = False
+    # sim = False # commented since unused.
     parser = optparse.OptionParser(
         'usage: %prog [options]', add_help_option=False)
     parser.add_option('-e', '--help', action='help')
