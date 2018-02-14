@@ -16,42 +16,45 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import yarp
-cstyle=yarp.ContactStyle()
-cstyle.persistent=True
+cstyle = yarp.ContactStyle()
+cstyle.persistent = True
+
 
 class Roboviewer_objects():
-    def __init__(self,portbasename,roboviewerportbasename,counter=-1):
-        self.out_port=yarp.BufferedPortBottle()
-        self.out_port.open(portbasename+"/roboviewer_out")
-        yarp.Network.connect(portbasename+"/roboviewer_out", roboviewerportbasename+"/objects:i", cstyle)
-        self.counter=counter
-    
-    def create_object(self,object_type):
-        self.counter+=1
-        bottle=self.out_port.prepare()
+    def __init__(self, portbasename, roboviewerportbasename, counter=-1):
+        self.out_port = yarp.BufferedPortBottle()
+        self.out_port.open(portbasename + "/roboviewer_out")
+        yarp.Network.connect(portbasename + "/roboviewer_out",
+                             roboviewerportbasename + "/objects:i", cstyle)
+        self.counter = counter
+
+    def create_object(self, object_type):
+        self.counter += 1
+        bottle = self.out_port.prepare()
         bottle.clear()
-        bottle_list=bottle.addList()
+        bottle_list = bottle.addList()
         bottle_list.addInt(self.counter)
         bottle_list.addString("type")
         bottle_list.addString(object_type)
         self.out_port.write(True)
-        return(self.counter)
-    
-    def send_prop(self,object_id,prop_name, prop_data):
-        bottle=self.out_port.prepare()
+        return (self.counter)
+
+    def send_prop(self, object_id, prop_name, prop_data):
+        bottle = self.out_port.prepare()
         bottle.clear()
-        bottle_list=bottle.addList()
+        bottle_list = bottle.addList()
         bottle_list.addInt(object_id)
         bottle_list.addString(prop_name)
         for i in prop_data:
             bottle_list.addDouble(i)
         self.out_port.write(True)
 
-    def send_prop_multi(self,object_ids,prop_names, prop_datas):
-        bottle=self.out_port.prepare()
+    def send_prop_multi(self, object_ids, prop_names, prop_datas):
+        bottle = self.out_port.prepare()
         bottle.clear()
-        for object_id, prop_name, prop_data in zip(object_ids,prop_names,prop_datas):
-            bottle_list=bottle.addList()
+        for object_id, prop_name, prop_data in zip(object_ids, prop_names,
+                                                   prop_datas):
+            bottle_list = bottle.addList()
             bottle_list.clear()
             bottle_list.addInt(object_id)
             bottle_list.addString(prop_name)
@@ -59,12 +62,10 @@ class Roboviewer_objects():
                 bottle_list.addDouble(i)
         self.out_port.write(True)
 
-def main():
-    return(False)
 
+def main():
+    return (False)
 
 
 if __name__ == "__main__":
     main()
-
-

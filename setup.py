@@ -11,5 +11,4 @@ setup(name='pyrovito',
       url='http://www.arcoslab.org/',
       package_dir={'pyrovito': ''},
       packages=['pyrovito'],
-      scripts=['pyrovito']
-     )
+      scripts=['pyrovito'])
