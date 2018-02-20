@@ -1,4 +1,7 @@
 #!/usr/bin/env python
 
-import pyrovito_utils
+from __future__ import absolute_import
+#!/usr/bin/env python
+
+from . import pyrovito_utils
 __all__ = ['pyrovito_utils']
