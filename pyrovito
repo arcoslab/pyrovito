@@ -157,7 +157,7 @@ def get_kin_descriptions(options, config_dir_arms, config_dir_hands):
         descriptions['hr'] = [
             hands.hands_kin['right'], hands.motor_locked_joints
         ]
-        print(('locked joints', hands.motor_locked_joints))
+        print('locked joints', hands.motor_locked_joints)
     if options.hand_left:
         hands = import_config(config_dir_hands + '/hands_kin.py')
         # hands=__import__('hands_kin')
@@ -296,7 +296,7 @@ if options.hand_left:
 
 
 def terminate_handler(signum, stack_frame):
-    print(('Catched signal', signum))
+    print('Catched signal', signum)
     if options.hand_left:
         global left_hand_server
         del (left_hand_server)
