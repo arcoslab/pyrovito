@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # Copyright (c) 2012 Technische Universitaet Muenchen, Informatik Lehrstuhl IX.
 # Author: Federico Ruiz-Ugalde <memeruiz@gmail.com>
 #
@@ -34,6 +35,7 @@
 # format : (id property_name property_values)
 # property values depend on the property_name
 
+from __future__ import print_function
 import time
 import pygame
 import sys
