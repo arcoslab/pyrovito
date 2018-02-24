@@ -21,7 +21,12 @@
 Opens the same ports required for visualization
 but it logs the info instead of drawing it.
 """
+from __future__ import print_function
 
+from builtins import zip
+from builtins import str
+from builtins import map
+from builtins import range
 import time
 import sys
 import signal
@@ -30,7 +35,6 @@ import optparse
 import pickle
 from numpy import array
 
-from arcospyu.config_parser.config_parser import import_config
 from arcospyu.control.control_loop import Controlloop
 
 sys.path.append('../hand_cart')
@@ -103,30 +107,6 @@ def configParse(argv):
     return (options, args)
 
 
-def get_kin_descriptions(options, config_dir_arms, config_dir_hands):
-    descriptions = {}
-    if options.arm_right:
-        arm_right = import_config(
-            config_dir_arms + '/config-' + options.robot + '-right.py')
-        descriptions['ar'] = arm_right.segments
-    if options.arm_left:
-        arm_left = import_config(
-            config_dir_arms + '/config-' + options.robot + '-left.py')
-        descriptions['al'] = arm_left.segments
-    if options.hand_right:
-        hands = import_config(config_dir_hands + '/hands_kin.py')
-        descriptions['hr'] = [
-            hands.hands_kin['right'], hands.motor_locked_joints
-        ]
-        print('locked joints', hands.motor_locked_joints)
-    if options.hand_left:
-        hands = import_config(config_dir_hands + '/hands_kin.py')
-        descriptions['hl'] = [
-            hands.hands_kin['left'], hands.motor_locked_joints
-        ]
-    return (descriptions)
-
-
 class VisSinkLoop(Controlloop):
     def set_up(self):
         self.current_time_for_log = 0
@@ -159,9 +139,10 @@ class VisSinkLoop(Controlloop):
         })
 
         # All required info to get the robot descriptions (unpickable)
-        kin_desc = [self.options,
-                    self.options.config_dir_arms,
-                    self.options.config_dir_hands]
+        kin_desc = [
+            self.options, self.options.config_dir_arms,
+            self.options.config_dir_hands
+        ]
 
         self.add_log({
             "id": "arm_right",
@@ -255,16 +236,20 @@ class VisSinkLoop(Controlloop):
         if self.options.arm_right:
             rarm_qin_bottle = self.rarm_qin_port.read(False)
             if rarm_qin_bottle:
-                rarm_qin = map(yarp.Value.asDouble,
-                               map(rarm_qin_bottle.get,
-                                   range(rarm_qin_bottle.size())))
+                rarm_qin = list(
+                    map(yarp.Value.asDouble,
+                        list(
+                            map(rarm_qin_bottle.get,
+                                list(range(rarm_qin_bottle.size()))))))
                 self.add_log({"id": "arm_right", "set_angles": rarm_qin})
         if self.options.arm_left:
             larm_qin_bottle = self.larm_qin_port.read(False)
             if larm_qin_bottle:
-                larm_qin = map(yarp.Value.asDouble,
-                               map(larm_qin_bottle.get,
-                                   range(larm_qin_bottle.size())))
+                larm_qin = list(
+                    map(yarp.Value.asDouble,
+                        list(
+                            map(larm_qin_bottle.get,
+                                list(range(larm_qin_bottle.size()))))))
                 self.add_log({"id": "arm_right", "set_angles": larm_qin})
         if self.options.hand_right:
             self.get_hand_info(self.right_hand_port, "right")
@@ -276,9 +261,11 @@ class VisSinkLoop(Controlloop):
         while self.objects_port.getPendingReads() != 0:
             objects_bottle = self.objects_port.read(True)
             if objects_bottle:
-                objects_bottles = map(yarp.Value.asList,
-                                      map(objects_bottle.get,
-                                          range(objects_bottle.size())))
+                objects_bottles = list(
+                    map(yarp.Value.asList,
+                        list(
+                            map(objects_bottle.get,
+                                list(range(objects_bottle.size()))))))
                 for object_bottle in objects_bottles:
                     object_id = object_bottle.get(0).asInt()
                     object_prop_name = object_bottle.get(1).toString()
@@ -286,9 +273,12 @@ class VisSinkLoop(Controlloop):
                         object_prop_data = object_bottle.get(2).toString()
                     else:
                         object_prop_data = array(
-                            map(yarp.Value.asDouble,
-                                map(object_bottle.get,
-                                    range(object_bottle.size())[2:])))
+                            list(
+                                map(yarp.Value.asDouble,
+                                    list(
+                                        map(object_bottle.get,
+                                            list(range(
+                                                object_bottle.size()))[2:])))))
                     # Properties are: type (sphere, frame, arrow, box), pose
                     # (16 values), color (three values), scale (three values),
                     # etc
@@ -299,9 +289,9 @@ class VisSinkLoop(Controlloop):
                     })
 
     def get_hand_info(self, hand_port, side_str):
-        angles_field = range(3)
-        speeds_field = range(3, 6)
-        torques_field = range(6, 9)
+        angles_field = list(range(3))
+        speeds_field = list(range(3, 6))
+        torques_field = list(range(6, 9))
         THUMB_ANGLE_FIELD = 1
         THUMB = 0
         FIRST_FINGER = 1
@@ -315,8 +305,10 @@ class VisSinkLoop(Controlloop):
         bottle = hand_port.read()
         # reading data from server (all fingers always)
         for fingerbottle, finger in zip(
-                map(yarp.Value.asList, map(bottle.get, range(
-                    2, bottle.size()))), all_finger_list):
+                list(
+                    map(yarp.Value.asList,
+                        list(map(bottle.get, list(range(2, bottle.size())))))),
+                all_finger_list):
             if finger == THUMB:
                 thumb_angle = bottle.get(
                     THUMB_ANGLE_FIELD).asDouble()  # for thumb position
@@ -326,35 +318,38 @@ class VisSinkLoop(Controlloop):
                     "Hand" + side_str,
                     "finger":
                     finger,
-                    "angles":
-                    ([thumb_angle] + map(yarp.Value.asDouble,
-                                         map(fingerbottle.get, angles_field))),
-                    "speeds":
-                    ([thumb_speed] + map(yarp.Value.asDouble,
-                                         map(fingerbottle.get, speeds_field))),
+                    "angles": ([thumb_angle] + list(
+                        map(yarp.Value.asDouble,
+                            list(map(fingerbottle.get, angles_field))))),
+                    "speeds": ([thumb_speed] + list(
+                        map(yarp.Value.asDouble,
+                            list(map(fingerbottle.get, speeds_field))))),
                     "torques":
                     array(
-                        map(yarp.Value.asDouble,
-                            map(fingerbottle.get, torques_field)))
+                        list(
+                            map(yarp.Value.asDouble,
+                                list(map(fingerbottle.get, torques_field)))))
                 })
             else:
-                self.add_log(
-                    {
-                        "id":
-                        "Hand" + side_str,
-                        "finger":
-                        finger,
-                        "angles":
+                self.add_log({
+                    "id":
+                    "Hand" + side_str,
+                    "finger":
+                    finger,
+                    "angles":
+                    list(
                         map(yarp.Value.asDouble,
-                            map(fingerbottle.get, angles_field)),
-                        "speeds":
+                            list(map(fingerbottle.get, angles_field)))),
+                    "speeds":
+                    list(
                         map(yarp.Value.asDouble,
-                            map(fingerbottle.get, speeds_field)),
-                        "torques":
-                        array(
+                            list(map(fingerbottle.get, speeds_field)))),
+                    "torques":
+                    array(
+                        list(
                             map(yarp.Value.asDouble,
-                                map(fingerbottle.get, torques_field)))
-                    })
+                                list(map(fingerbottle.get, torques_field)))))
+                })
 
     def add_log(self, elements):
         # FIXME: We should use a 'real' logging solution
@@ -362,7 +357,7 @@ class VisSinkLoop(Controlloop):
         self.log[self.current_time_for_log] = elements
 
     def terminate_handler(self, signum, stack_frame):
-        print('Catched signal', signum)
+        print(('Catched signal', signum))
         log_file = open("log_file_" + str(time.time()), 'w')
         pickle.dump(self.log, log_file)
         log_file.close()
