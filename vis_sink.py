@@ -306,8 +306,10 @@ class VisSinkLoop(Controlloop):
                     THUMB_ANGLE_FIELD).asDouble()  # for thumb position
                 thumb_speed = 0.0  # TODO: Calculate thumb speed
                 self.add_log({
-                    "id": "".join(["Hand", side_str]),
-                    "finger": finger,
+                    "id":
+                    "".join(["Hand", side_str]),
+                    "finger":
+                    finger,
                     "angles": ([thumb_angle] + list(
                         map(yarp.Value.asDouble,
                             list(map(fingerbottle.get, angles_field))))),
@@ -322,8 +324,10 @@ class VisSinkLoop(Controlloop):
                 })
             else:
                 self.add_log({
-                    "id": "".join(["Hand", side_str]),
-                    "finger": finger,
+                    "id":
+                    "".join(["Hand", side_str]),
+                    "finger":
+                    finger,
                     "angles":
                     list(
                         map(yarp.Value.asDouble,
@@ -353,9 +357,14 @@ class VisSinkLoop(Controlloop):
         sys.exit()
 
 
-loop = VisSinkLoop(15.)
-signal.signal(signal.SIGTERM, loop.terminate_handler)
-signal.signal(signal.SIGINT, loop.terminate_handler)
-loop.set_up()
-loop.loop()
-loop.store()
+def main():
+    loop = VisSinkLoop(15.)
+    signal.signal(signal.SIGTERM, loop.terminate_handler)
+    signal.signal(signal.SIGINT, loop.terminate_handler)
+    loop.set_up()
+    loop.loop()
+    loop.store()
+
+
+if __name__ == "__main__":
+    main()
