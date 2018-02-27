@@ -46,64 +46,55 @@ def configParse(argv):
     optparse.SUPPRESS_HELP
     parser = optparse.OptionParser(
         "usage: %prog [options]", add_help_option=False)
-    parser.add_option("-e", "--help", action="help")
+    parser.add_option("-h", "--help", action="help")
     parser.add_option(
         "-r",
         "--robot",
         dest="robot",
         default="lwr",
         type="string",
-        help="robot name")
+        help="".join([
+            "Tell the robot name so that the correct Articulated",
+            "Tree is loaded"
+        ]))
     parser.add_option(
         "--arm_left",
         action="store_true",
         dest="arm_left",
         default=False,
-        help="arm left side")
+        help="Enable the configuration and simulation of a left arm")
     parser.add_option(
         "--arm_right",
         action="store_true",
         dest="arm_right",
         default=False,
-        help="arm right side")
+        help="Enable the configuration and simulation or a right arm")
     parser.add_option(
         "--hand_left",
         action="store_true",
         dest="hand_left",
         default=False,
-        help="hand left side")
+        help="Enable the configuration and simulation of a left hand")
     parser.add_option(
         "--hand_right",
         action="store_true",
         dest="hand_right",
         default=False,
-        help="hand right side")
-    parser.add_option(
-        "--capture_dir",
-        dest="capture_dir",
-        default="./",
-        type="string",
-        help="capture directory")
-    parser.add_option(
-        "-c",
-        action="store_true",
-        dest="capture",
-        default=False,
-        help="Enable image capture")
+        help="Enable the configuration and simulation of a right hand")
     parser.add_option(
         "-a",
         "--config_dir_arms",
         dest="config_dir_arms",
         default="robot_descriptions/tum-rosie/kinematics/lwr/",
         type="string",
-        help="arms config data directory")
+        help="Arms configuration directory")
     parser.add_option(
         "-d",
         "--config_dir_hands",
         dest="config_dir_hands",
         default="robot_descriptions/tum-rosie/kinematics/sahand/",
         type="string",
-        help="hands config data directory")
+        help="Hands configuration directory")
     (options, args) = parser.parse_args(argv[1:])
     return (options, args)
 
@@ -185,19 +176,19 @@ class VisSinkLoop(Controlloop):
         if self.options.arm_right:
             self.rarm_qin_port = yarp.BufferedPortBottle()
             self.rarm_qin_port.open(yarpbaseportname + "/r_arm_qin")
-            yarp.Network.connect(
-                "/" + self.options.robot + "/right/bridge/encoders",
-                yarpbaseportname + "/r_arm_qin", cstyle)
+            yarp.Network.connect("".join([
+                "/", self.options.robot, "/right/bridge/encoders"
+            ]), "".join([yarpbaseportname, "/r_arm_qin"]), cstyle)
         if self.options.arm_left:
             self.larm_qin_port = yarp.BufferedPortBottle()
-            self.larm_qin_port.open(yarpbaseportname + "/l_arm_qin")
-            yarp.Network.connect(
-                "/" + self.options.robot + "/left/bridge/encoders",
-                yarpbaseportname + "/l_arm_qin", cstyle)
+            self.larm_qin_port.open("".join([yarpbaseportname, "/l_arm_qin"]))
+            yarp.Network.connect("".join([
+                "/", self.options.robot, "/left/bridge/encoders"
+            ]), "".join([yarpbaseportname, "/l_arm_qin"]), cstyle)
 
         # objects port
         self.objects_port = yarp.BufferedPortBottle()
-        self.objects_port.open(yarpbaseportname + "/objects:i")
+        self.objects_port.open("".join([yarpbaseportname, "/objects:i"]))
         self.objects_port.setStrict()
         self.objects_dict = {}
 
@@ -315,10 +306,8 @@ class VisSinkLoop(Controlloop):
                     THUMB_ANGLE_FIELD).asDouble()  # for thumb position
                 thumb_speed = 0.0  # TODO: Calculate thumb speed
                 self.add_log({
-                    "id":
-                    "Hand" + side_str,
-                    "finger":
-                    finger,
+                    "id": "".join(["Hand", side_str]),
+                    "finger": finger,
                     "angles": ([thumb_angle] + list(
                         map(yarp.Value.asDouble,
                             list(map(fingerbottle.get, angles_field))))),
@@ -333,10 +322,8 @@ class VisSinkLoop(Controlloop):
                 })
             else:
                 self.add_log({
-                    "id":
-                    "Hand" + side_str,
-                    "finger":
-                    finger,
+                    "id": "".join(["Hand", side_str]),
+                    "finger": finger,
                     "angles":
                     list(
                         map(yarp.Value.asDouble,
@@ -359,7 +346,7 @@ class VisSinkLoop(Controlloop):
 
     def terminate_handler(self, signum, stack_frame):
         print(("Catched signal", signum))
-        log_file = open("log_file_" + str(time.time()), "w")
+        log_file = open("".join(["log_file_", str(time.time())]), "w")
         pickle.dump(self.log, log_file)
         log_file.close()
         yarp.Network.fini()
