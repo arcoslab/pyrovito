@@ -38,72 +38,72 @@ from numpy import array
 
 from arcospyu.control.control_loop import Controlloop
 
-sys.path.append('../hand_cart')
-sys.path.append('../config_data/lwr')
+sys.path.append("../hand_cart")
+sys.path.append("../config_data/lwr")
 
 
 def configParse(argv):
     optparse.SUPPRESS_HELP
     parser = optparse.OptionParser(
-        'usage: %prog [options]', add_help_option=False)
-    parser.add_option('-e', '--help', action='help')
+        "usage: %prog [options]", add_help_option=False)
+    parser.add_option("-e", "--help", action="help")
     parser.add_option(
-        '-r',
-        '--robot',
-        dest='robot',
-        default='lwr',
-        type='string',
-        help='robot name')
+        "-r",
+        "--robot",
+        dest="robot",
+        default="lwr",
+        type="string",
+        help="robot name")
     parser.add_option(
-        '--arm_left',
-        action='store_true',
-        dest='arm_left',
+        "--arm_left",
+        action="store_true",
+        dest="arm_left",
         default=False,
-        help='arm left side')
+        help="arm left side")
     parser.add_option(
-        '--arm_right',
-        action='store_true',
-        dest='arm_right',
+        "--arm_right",
+        action="store_true",
+        dest="arm_right",
         default=False,
-        help='arm right side')
+        help="arm right side")
     parser.add_option(
-        '--hand_left',
-        action='store_true',
-        dest='hand_left',
+        "--hand_left",
+        action="store_true",
+        dest="hand_left",
         default=False,
-        help='hand left side')
+        help="hand left side")
     parser.add_option(
-        '--hand_right',
-        action='store_true',
-        dest='hand_right',
+        "--hand_right",
+        action="store_true",
+        dest="hand_right",
         default=False,
-        help='hand right side')
+        help="hand right side")
     parser.add_option(
-        '--capture_dir',
-        dest='capture_dir',
-        default='./',
-        type='string',
-        help='capture directory')
+        "--capture_dir",
+        dest="capture_dir",
+        default="./",
+        type="string",
+        help="capture directory")
     parser.add_option(
-        '-c',
-        action='store_true',
-        dest='capture',
+        "-c",
+        action="store_true",
+        dest="capture",
         default=False,
-        help='Enable image capture')
+        help="Enable image capture")
     parser.add_option(
-        '-a',
-        '--config_dir_arms',
-        dest='config_dir_arms',
-        default='robot_descriptions/tum-rosie/kinematics/lwr/',
-        type='string',
-        help='arms config data directory')
+        "-a",
+        "--config_dir_arms",
+        dest="config_dir_arms",
+        default="robot_descriptions/tum-rosie/kinematics/lwr/",
+        type="string",
+        help="arms config data directory")
     parser.add_option(
-        '-d',
-        '--config_dir_hands',
-        dest='config_dir_hands',
-        default='robot_descriptions/tum-rosie/kinematics/sahand/',
-        type='string',
-        help='hands config data directory')
+        "-d",
+        "--config_dir_hands",
+        dest="config_dir_hands",
+        default="robot_descriptions/tum-rosie/kinematics/sahand/",
+        type="string",
+        help="hands config data directory")
     (options, args) = parser.parse_args(argv[1:])
     return (options, args)
 
@@ -177,57 +177,57 @@ class VisSinkLoop(Controlloop):
             "children": ["arm_right", "arm_left", "hand_right", "hand_left"]
         })
 
-        yarpbaseportname = '/' + self.options.robot + '/roboviewer'
+        yarpbaseportname = "/" + self.options.robot + "/roboviewer"
         yarp.Network.init()
         cstyle = yarp.ContactStyle()
         cstyle.persistent = True
 
         if self.options.arm_right:
             self.rarm_qin_port = yarp.BufferedPortBottle()
-            self.rarm_qin_port.open(yarpbaseportname + '/r_arm_qin')
+            self.rarm_qin_port.open(yarpbaseportname + "/r_arm_qin")
             yarp.Network.connect(
-                '/' + self.options.robot + '/right/bridge/encoders',
-                yarpbaseportname + '/r_arm_qin', cstyle)
+                "/" + self.options.robot + "/right/bridge/encoders",
+                yarpbaseportname + "/r_arm_qin", cstyle)
         if self.options.arm_left:
             self.larm_qin_port = yarp.BufferedPortBottle()
-            self.larm_qin_port.open(yarpbaseportname + '/l_arm_qin')
+            self.larm_qin_port.open(yarpbaseportname + "/l_arm_qin")
             yarp.Network.connect(
-                '/' + self.options.robot + '/left/bridge/encoders',
-                yarpbaseportname + '/l_arm_qin', cstyle)
+                "/" + self.options.robot + "/left/bridge/encoders",
+                yarpbaseportname + "/l_arm_qin", cstyle)
 
         # objects port
         self.objects_port = yarp.BufferedPortBottle()
-        self.objects_port.open(yarpbaseportname + '/objects:i')
+        self.objects_port.open(yarpbaseportname + "/objects:i")
         self.objects_port.setStrict()
         self.objects_dict = {}
 
         if self.options.hand_right:
             self.right_hand_port = yarp.BufferedPortBottle()
-            self.right_hand_port.open('/roboviewer_right_hand/hand_client0')
+            self.right_hand_port.open("/roboviewer_right_hand/hand_client0")
             self.right_hand_port_ctrl = yarp.BufferedPortBottle()
             self.right_hand_port_ctrl.open(
-                '/roboviewer_right_hand/hand_client0/ctrl')
+                "/roboviewer_right_hand/hand_client0/ctrl")
 
-            yarp.Network.connect('/sahand0/out',
-                                 '/roboviewer_right_hand/hand_client0')
-            yarp.Network.connect('/roboviewer_right_hand/hand_client0',
-                                 '/sahand1/in')
-            yarp.Network.connect('/roboviewer_right_hand/hand_client0/ctrl',
-                                 '/sahand/cmd')
+            yarp.Network.connect("/sahand0/out",
+                                 "/roboviewer_right_hand/hand_client0")
+            yarp.Network.connect("/roboviewer_right_hand/hand_client0",
+                                 "/sahand1/in")
+            yarp.Network.connect("/roboviewer_right_hand/hand_client0/ctrl",
+                                 "/sahand/cmd")
 
         if self.options.hand_left:
             self.left_hand_port = yarp.BufferedPortBottle()
-            self.left_hand_port.open('/roboviewer_left_hand/hand_client1')
+            self.left_hand_port.open("/roboviewer_left_hand/hand_client1")
             self.left_hand_port_ctrl = yarp.BufferedPortBottle()
             self.left_hand_port_ctrl.open(
-                '/roboviewer_left_hand/hand_client1/ctrl')
+                "/roboviewer_left_hand/hand_client1/ctrl")
 
-            yarp.Network.connect('/sahand1/out',
-                                 '/roboviewer_left_hand/hand_client1')
-            yarp.Network.connect('/roboviewer_left_hand/hand_client1',
-                                 '/sahand1/in')
-            yarp.Network.connect('/roboviewer_left_hand/hand_client1/ctrl',
-                                 '/sahand/cmd')
+            yarp.Network.connect("/sahand1/out",
+                                 "/roboviewer_left_hand/hand_client1")
+            yarp.Network.connect("/roboviewer_left_hand/hand_client1",
+                                 "/sahand1/in")
+            yarp.Network.connect("/roboviewer_left_hand/hand_client1/ctrl",
+                                 "/sahand/cmd")
 
     def set_params(self, params):
         pass
@@ -270,7 +270,7 @@ class VisSinkLoop(Controlloop):
                 for object_bottle in objects_bottles:
                     object_id = object_bottle.get(0).asInt()
                     object_prop_name = object_bottle.get(1).toString()
-                    if object_prop_name == 'type':
+                    if object_prop_name == "type":
                         object_prop_data = object_bottle.get(2).toString()
                     else:
                         object_prop_data = array(
@@ -353,13 +353,13 @@ class VisSinkLoop(Controlloop):
                 })
 
     def add_log(self, elements):
-        # FIXME: We should use a 'real' logging solution
+        # FIXME: We should use a "real" logging solution
         # But that stores python objects, not just text.
         self.log[self.current_time_for_log] = elements
 
     def terminate_handler(self, signum, stack_frame):
-        print(('Catched signal', signum))
-        log_file = open("log_file_" + str(time.time()), 'w')
+        print(("Catched signal", signum))
+        log_file = open("log_file_" + str(time.time()), "w")
         pickle.dump(self.log, log_file)
         log_file.close()
         yarp.Network.fini()
