@@ -65,6 +65,13 @@ def configParse(argv):
         'usage: %prog [options]', add_help_option=False)
     parser.add_option('-e', '--help', action='help')
     parser.add_option(
+        '-n',
+        '--namespace',
+        dest='namespace',
+        default='/0',
+        type='string',
+        help='ARCOS-Lab yarp basename')
+    parser.add_option(
         '-r',
         '--robot',
         dest='robot',
@@ -257,7 +264,8 @@ if options.arm_left:
 
 tree.update_transformations()
 
-yarpbaseportname = '/' + options.robot + '/roboviewer'
+robotbn = options.namespace + "/" + options.robot
+yarpbaseportname = robotbn + '/roboviewer'
 yarp.Network.init()
 cstyle = yarp.ContactStyle()
 cstyle.persistent = True
@@ -265,12 +273,12 @@ cstyle.persistent = True
 if options.arm_right:
     rarm_qin_port = yarp.BufferedPortBottle()
     rarm_qin_port.open(yarpbaseportname + '/r_arm_qin')
-    yarp.Network.connect('/' + options.robot + '/right/bridge/encoders',
+    yarp.Network.connect(robotbn + '/right/bridge/encoders',
                          yarpbaseportname + '/r_arm_qin', cstyle)
 if options.arm_left:
     larm_qin_port = yarp.BufferedPortBottle()
     larm_qin_port.open(yarpbaseportname + '/l_arm_qin')
-    yarp.Network.connect('/' + options.robot + '/left/bridge/encoders',
+    yarp.Network.connect(robotbn + '/left/bridge/encoders',
                          yarpbaseportname + '/l_arm_qin', cstyle)
 
 # objects port
@@ -286,15 +294,15 @@ if options.hand_right:
         config_hands,
         handedness='right',
         sahand_number=0,
-        portprefix='/roboviewer_right_hand',
-        sahand_port_name_prefix='/sahand')
+        portprefix=yarpbaseportname + '/right_hand',
+        sahand_port_name_prefix=options.namespace+'/sahand')
 if options.hand_left:
     left_hand_server = Hand(
         config_hands,
         handedness='left',
         sahand_number=1,
-        portprefix='/roboviewer_left_hand',
-        sahand_port_name_prefix='/sahand')
+        portprefix=yarpbaseportname + '/left_hand',
+        sahand_port_name_prefix=options.namespace+'/sahand')
 
 
 def terminate_handler(signum, stack_frame):
