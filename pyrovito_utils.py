@@ -17,16 +17,20 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import yarp
+from time import sleep
 cstyle = yarp.ContactStyle()
 cstyle.persistent = True
 
 
 class Roboviewer_objects():
-    def __init__(self, portbasename, roboviewerportbasename, counter=-1):
+    def __init__(self, portbasename, roboviewerportbasename, counter=-1, wait_connection=False):
         self.out_port = yarp.BufferedPortBottle()
         self.out_port.open(portbasename + "/roboviewer_out")
         yarp.Network.connect(portbasename + "/roboviewer_out",
                              roboviewerportbasename + "/objects:i", cstyle)
+        if wait_connection:
+            while not yarp.Network.isConnected(portbasename + "/roboviewer_out", roboviewerportbasename + "/objects:i"):
+                sleep(0.01)
         self.counter = counter
 
     def create_object(self, object_type):
